@@ -20,7 +20,7 @@ if WIDTH < 5:
 
 from sys import stdout
 status = 2
-#status状态：2为等待，1为游戏进行中且可落子，3为等待对方落子，0为游戏结束但未退出，-1为退出
+#status状态：2为等待，1为游戏进行中且可落子，3为等待对方落子，0为游戏结束但未退出，-1为退出，4为受保护状态
 
 recent_x = int((WIDTH-1)/2)
 recent_y = int((HEIGHT-1)/2)
@@ -125,11 +125,11 @@ def call(x):
         elif x.event_type == 'down' and x.name == 's':
             if board[recent_y][recent_x] <= 8:
                 set_chess(chess_type)
-                move_away(recent_x, recent_y)
                 send_msg((str(recent_y)+' '+str(recent_x)))
-                status = 3
                 if if_over():
                     game_win()
+                    return 
+                status = 3
             
     elif status == 3:
         if x.event_type == 'down' and x.name == 'o':
@@ -160,6 +160,7 @@ def potential_place(x, y):
 def set_chess(what_chess):
     board[recent_y][recent_x] = what_chess+9
     fprint.goto_x_y(recent_x*2,recent_y)
+    fprint.set_color(0x0f)
     print(ICONS[what_chess+9])
 
 def if_over():
@@ -238,25 +239,25 @@ def print_board():
             stdout.write(ICONS[board[i][j]])
         stdout.write("\n")
 
-#游戏结束（某方获得无字连线、某方退出游戏活某方断开连接时调用）
+#游戏结束（某方获得五子连线、某方退出游戏活某方断开连接时调用）
 def game_win():
     global status
-    status = 0
-    
-    #关闭套接字
-    mysocket.close()
-    if if_server:
-        data.close()
 
     #输出游戏结果
     fprint.goto_x_y(0, HEIGHT+1)
     fprint.set_color(0x0f)
     print("GAME ENDS!            ")
-    if chess_type == 1:
-        print("● WON THE GAME!")
+    if status == 3:
+        print(ICONS[10-chess_type]+" WON THE GAME!")
     else:
-        print("○ WON THE GAME!")
+        print(ICONS[9+chess_type]+" WON THE GAME!")
     print("Press any key to exit the game.")
+
+    status = 0
+    #关闭套接字
+    mysocket.close()
+    if if_server:
+        data.close()
 
 def welcome():
     fprint.goto_x_y(0, 0)
